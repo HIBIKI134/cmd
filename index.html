@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body {
+      background-color: #0c0c0c;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 20px;
+      margin: 0;
+    }
+    body.white-mode {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+    body.white-mode .prompt,
+    body.white-mode #cmd-input,
+    body.white-mode #output-history {
+      color: #000000 !important;
+    }
+    #terminal {
+      width: 100%;
+      height: 90vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+    .input-line {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    .prompt {
+      color: #00ff00;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    #cmd-input {
+      background: transparent;
+      border: none;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+      width: 100%;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="terminal">
+    <div>commandmand prompt </div>
+    <div>コードを書いてください</div>
+    <div>Type "help" to see available commands.</div>
+    <div id="output-history"></div>
+    
+    <div class="input-line">
+      <span class="prompt">C:\Users\GAS></span>
+      <input type="text" id="cmd-input" autofocus autocomplete="off">
+    </div>
+  </div>
+
+  <a id="hidden-link" href="#" target="_blank" style="display:none;"></a>
+
+  <script>
+    const input = document.getElementById('cmd-input');
+    const history = document.getElementById('output-history');
+    const terminal = document.getElementById('terminal');
+    const body = document.body;
+    const hiddenLink = document.getElementById('hidden-link');
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const command = input.value;
+        input.value = ''; 
+        
+        history.innerHTML += `\nC:\\Users\\GAS>${command}`;
+        
+        const cmdClean = command.trim().toLowerCase();
+        
+        // 1. Clear Screen
+        if (cmdClean === 'clear' || cmdClean === 'cls') {
+          history.innerHTML = '';
+          return;
+        }
+
+        // 2. White Screen
+        if (cmdClean === 'white') {
+          body.classList.add('white-mode');
+          history.innerHTML += '\nScreen background changed to white.';
+          return;
+        }
+
+        // 3. Black Screen
+        if (cmdClean === 'black' || cmdClean === 'dark') {
+          body.classList.remove('white-mode');
+          history.innerHTML += '\nReturned to black screen.';
+          return;
+        }
+        
+        // Server Request
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (result) {
+              if (result.startsWith('OPEN_URL:')) {
+                const url = result.replace('OPEN_URL:', '');
+                history.innerHTML += `\nOpening ${url}. If blocked, please check your browser settings.`;
+                hiddenLink.href = url;
+                hiddenLink.click();
+              } else {
+                history.innerHTML += `\n${result}`;
+              }
+            }
+            terminal.scrollTop = terminal.scrollHeight;
+          })
+          .withFailureHandler(function(error) {
+            history.innerHTML += `\nError: ${error.message}`;
+          })
+          .runCommand(command);
+      }
+    });
+
+    document.addEventListener('click', () => input.focus());
+  </script>
+</body>
+</html>
